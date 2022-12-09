@@ -1,6 +1,7 @@
 extern crate core;
 
 pub mod includes;
+pub mod overlaps;
 pub mod puzzle_input;
 
 #[cfg(test)]

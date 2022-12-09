@@ -1,4 +1,5 @@
 use aoc_core::includes::Includes;
+use aoc_core::overlaps::Overlaps;
 use std::ops::RangeInclusive;
 
 pub struct WorkerAssignment {
@@ -17,5 +18,11 @@ impl From<&str> for WorkerAssignment {
 impl Includes<WorkerAssignment> for WorkerAssignment {
     fn includes(&self, other: &WorkerAssignment) -> bool {
         self.range.includes(&other.range)
+    }
+}
+
+impl Overlaps<WorkerAssignment> for WorkerAssignment {
+    fn overlaps(&self, other: &WorkerAssignment) -> bool {
+        self.range.overlaps(&other.range)
     }
 }

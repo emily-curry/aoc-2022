@@ -12,4 +12,10 @@ fn main() {
         "Pairs in which one assignment fully overlaps another: {}",
         full_overlaps
     );
+
+    let partial_overlaps = pairs.iter().filter(|x| x.does_overlap()).count();
+    println!(
+        "Pairs in which one assignment partially overlaps another: {}",
+        partial_overlaps
+    );
 }

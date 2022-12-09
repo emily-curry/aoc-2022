@@ -1,5 +1,6 @@
 use crate::worker_assignment::WorkerAssignment;
 use aoc_core::includes::Includes;
+use aoc_core::overlaps::Overlaps;
 
 pub struct WorkerPair {
     a: WorkerAssignment,
@@ -9,6 +10,10 @@ pub struct WorkerPair {
 impl WorkerPair {
     pub fn does_include(&self) -> bool {
         self.a.includes(&self.b) || self.b.includes(&self.a)
+    }
+
+    pub fn does_overlap(&self) -> bool {
+        self.a.overlaps(&self.b)
     }
 }
 
