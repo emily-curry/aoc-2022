@@ -1,5 +1,6 @@
 extern crate core;
 
+pub mod cardinal_direction;
 pub mod includes;
 pub mod overlaps;
 pub mod puzzle_input;
