@@ -7,29 +7,32 @@ use std::fmt::{Display, Formatter, Write};
 
 #[derive(Debug)]
 pub struct RockState {
-    max_y: usize,
+    pub max_y: usize,
     tower: HashSet<RockPoint>,
     shapes: VecDeque<RockKind>,
     jets: VecDeque<JetDirection>,
+    jets_count: usize,
 }
 
 impl RockState {
-    pub fn drop_rock(&mut self) {
+    pub fn drop_rock(&mut self) -> bool {
         let next = self.shapes.pop_front().unwrap();
         let mut rock = next.to_rock(self.max_y);
         self.shapes.push_back(next);
 
+        let mut did_loop = false;
         // find looping pattern? maybe every time jets cycles?
-        while self.step_rock(&mut rock) {}
+        while self.step_rock(&mut rock) {
+            if self.jets_count % self.jets.len() == 0 {
+                did_loop = true;
+            }
+        }
         let max_y = *rock.points.iter().map(|(_, y)| y).max().unwrap();
         if max_y > self.max_y {
             self.max_y = max_y;
         }
         self.tower.extend(rock.points.iter());
-    }
-
-    pub fn get_height(&self) -> usize {
-        self.max_y
+        did_loop
     }
 
     pub fn prune(&mut self) {
@@ -39,6 +42,15 @@ impl RockState {
             .max();
         if let Some(l) = limit {
             self.tower.retain(|p| p.1 >= l);
+        }
+    }
+
+    pub fn add_height(&mut self, diff: usize) {
+        self.max_y += diff;
+        let points: Vec<RockPoint> = self.tower.drain().collect();
+        for mut p in points {
+            p.1 += diff;
+            self.tower.insert(p);
         }
     }
 
@@ -53,6 +65,7 @@ impl RockState {
             }
         }
         self.jets.push_back(next_dir);
+        self.jets_count += 1;
 
         let can_fall = self.can_move_v(rock);
         if can_fall {
@@ -110,6 +123,7 @@ impl From<&str> for RockState {
             tower: HashSet::new(),
             jets,
             shapes,
+            jets_count: 0,
         }
     }
 }
@@ -142,29 +156,29 @@ mod tests {
         let mut state = RockState::from(">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>");
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 1);
+        assert_eq!(state.max_y, 1);
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 4);
+        assert_eq!(state.max_y, 4);
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 6);
+        assert_eq!(state.max_y, 6);
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 7);
+        assert_eq!(state.max_y, 7);
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 9);
+        assert_eq!(state.max_y, 9);
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 10);
+        assert_eq!(state.max_y, 10);
         state.drop_rock();
         println!("{}", state);
-        assert_eq!(state.get_height(), 13);
+        assert_eq!(state.max_y, 13);
         for _ in 7..2022 {
             state.drop_rock();
         }
-        assert_eq!(state.get_height(), 3068);
+        assert_eq!(state.max_y, 3068);
     }
 
     #[test]
@@ -173,6 +187,6 @@ mod tests {
         for _ in 0..1000000000000usize {
             state.drop_rock();
         }
-        assert_eq!(state.get_height(), 1514285714288usize);
+        assert_eq!(state.max_y, 1514285714288usize);
     }
 }
