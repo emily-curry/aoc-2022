@@ -139,7 +139,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc-19"
+version = "0.1.0"
+dependencies = [
+ "aoc-core",
+]
+
+[[package]]
 name = "aoc-20"
+version = "0.1.0"
+dependencies = [
+ "aoc-core",
+]
+
+[[package]]
+name = "aoc-21"
 version = "0.1.0"
 dependencies = [
  "aoc-core",
