@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::ops::{Add, Div, Mul, Sub};
 
 use crate::monkey::{Monkey, BALD_MONKEY};
 use crate::monkey_expression::MonkeyExpression;
 use crate::monkey_operator::MonkeyOperator;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MonkeyExpressionTreeNode {
     Value(isize),
     Expression(Box<MonkeyExpressionTree>),
@@ -33,28 +34,56 @@ impl MonkeyExpressionTreeNode {
             rhs,
             op: exp.op,
         };
-        let node = MonkeyExpressionTreeNode::Expression(Box::new(exp));
-        node.reduce()
+        exp.reduce()
     }
 
-    pub fn solve_for_humn(self, eq_to: Self) -> isize {
-        if let MonkeyExpressionTreeNode::Value(v) = self.solve(eq_to) {
-            v
-        } else {
-            panic!("Did not find solution!");
+    pub fn solve(self, eq_to: Self) -> isize {
+        println!("Solve: {} == {}", self, eq_to);
+        match eq_to {
+            MonkeyExpressionTreeNode::Variable => {
+                let reduced = self.reduce();
+                if let MonkeyExpressionTreeNode::Value(result) = reduced {
+                    result
+                } else {
+                    panic!(
+                        "RHS of equation was only a variable, but could not reduce the LHS: {}",
+                        reduced
+                    )
+                }
+            }
+            MonkeyExpressionTreeNode::Value(_) => {
+                panic!("RHS should never be a plain value")
+            }
+            MonkeyExpressionTreeNode::Expression(rhs_exp) => match rhs_exp.op {
+                MonkeyOperator::Add => {
+                    let (rhs_value, inner_exp) = rhs_exp.unwrap_either_value().unwrap();
+                    (self - MonkeyExpressionTreeNode::Value(rhs_value)).solve(inner_exp)
+                }
+                MonkeyOperator::Sub => {
+                    if matches!(rhs_exp.rhs, MonkeyExpressionTreeNode::Value(_)) {
+                        (self + rhs_exp.rhs).solve(rhs_exp.lhs)
+                    } else if matches!(rhs_exp.lhs, MonkeyExpressionTreeNode::Value(_)) {
+                        ((self - rhs_exp.lhs) * MonkeyExpressionTreeNode::Value(-1))
+                            .solve(rhs_exp.rhs)
+                    } else {
+                        panic!("Solve sub: One side must be a value")
+                    }
+                }
+                MonkeyOperator::Mul => {
+                    let (rhs_value, inner_exp) = rhs_exp.unwrap_either_value().unwrap();
+                    (self / MonkeyExpressionTreeNode::Value(rhs_value)).solve(inner_exp)
+                }
+                MonkeyOperator::Div => {
+                    if matches!(rhs_exp.rhs, MonkeyExpressionTreeNode::Value(_)) {
+                        (self * rhs_exp.rhs).solve(rhs_exp.lhs)
+                    } else if matches!(rhs_exp.lhs, MonkeyExpressionTreeNode::Value(_)) {
+                        panic!("Never actually occurs in input :)))")
+                    } else {
+                        panic!("Solve div: One side must be a value")
+                    }
+                }
+            },
         }
-    }
-
-    fn solve(self, eq_to: Self) -> Self {
-        println!("{} == {}", eq_to, self);
-        if matches!(eq_to, MonkeyExpressionTreeNode::Variable) {
-            return self.reduce();
-        }
-        if let MonkeyExpressionTreeNode::Expression(rhs_exp) = eq_to {
-            todo!()
-        }
-
-        panic!("I don't think this should happen")
     }
 
     fn reduce(self) -> Self {
@@ -76,7 +105,59 @@ impl Display for MonkeyExpressionTreeNode {
     }
 }
 
-#[derive(Debug, Clone)]
+impl Add for MonkeyExpressionTreeNode {
+    type Output = MonkeyExpressionTreeNode;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let next = MonkeyExpressionTree {
+            lhs: self,
+            rhs,
+            op: MonkeyOperator::Add,
+        };
+        MonkeyExpressionTreeNode::Expression(Box::new(next))
+    }
+}
+
+impl Sub for MonkeyExpressionTreeNode {
+    type Output = MonkeyExpressionTreeNode;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        let next = MonkeyExpressionTree {
+            lhs: self,
+            rhs,
+            op: MonkeyOperator::Sub,
+        };
+        MonkeyExpressionTreeNode::Expression(Box::new(next))
+    }
+}
+
+impl Mul for MonkeyExpressionTreeNode {
+    type Output = MonkeyExpressionTreeNode;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let next = MonkeyExpressionTree {
+            lhs: self,
+            rhs,
+            op: MonkeyOperator::Mul,
+        };
+        MonkeyExpressionTreeNode::Expression(Box::new(next))
+    }
+}
+
+impl Div for MonkeyExpressionTreeNode {
+    type Output = MonkeyExpressionTreeNode;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        let next = MonkeyExpressionTree {
+            lhs: self,
+            rhs,
+            op: MonkeyOperator::Div,
+        };
+        MonkeyExpressionTreeNode::Expression(Box::new(next))
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MonkeyExpressionTree {
     lhs: MonkeyExpressionTreeNode,
     rhs: MonkeyExpressionTreeNode,
@@ -120,6 +201,16 @@ impl MonkeyExpressionTree {
             MonkeyExpressionTreeNode::Value(*values.get(monkey).unwrap())
         } else {
             MonkeyExpressionTreeNode::expand(monkey, expressions, values)
+        }
+    }
+
+    fn unwrap_either_value(self) -> Option<(isize, MonkeyExpressionTreeNode)> {
+        if let MonkeyExpressionTreeNode::Value(v) = &self.lhs {
+            Some((*v, self.rhs))
+        } else if let MonkeyExpressionTreeNode::Value(v) = &self.rhs {
+            Some((*v, self.lhs))
+        } else {
+            None
         }
     }
 }

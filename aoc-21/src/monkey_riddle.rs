@@ -1,6 +1,6 @@
 use crate::monkey::{Monkey, ROOT_MONKEY};
 use crate::monkey_expression::MonkeyExpression;
-use crate::monkey_expression_tree::{MonkeyExpressionTree, MonkeyExpressionTreeNode};
+use crate::monkey_expression_tree::MonkeyExpressionTreeNode;
 use std::collections::{HashMap, VecDeque};
 use std::str::Lines;
 
@@ -37,7 +37,13 @@ impl MonkeyRiddle {
         let root = expressions.remove(&ROOT_MONKEY).unwrap();
         let lhs = MonkeyExpressionTreeNode::expand(&root.lhs, &expressions, &self.evaluated);
         let rhs = MonkeyExpressionTreeNode::expand(&root.rhs, &expressions, &self.evaluated);
-        lhs.solve_for_humn(rhs)
+        if matches!(lhs, MonkeyExpressionTreeNode::Value(_)) {
+            lhs.solve(rhs)
+        } else if matches!(rhs, MonkeyExpressionTreeNode::Value(_)) {
+            rhs.solve(lhs)
+        } else {
+            panic!("One side must be a value to solve")
+        }
     }
 }
 

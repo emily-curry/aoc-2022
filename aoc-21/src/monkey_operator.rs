@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Write};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MonkeyOperator {
     Add,
     Sub,
@@ -18,18 +18,6 @@ impl MonkeyOperator {
                 0 => Some(lhs / rhs),
                 _ => None,
             },
-        }
-    }
-
-    pub fn eval_opp(&self, lhs: &isize, rhs: &isize) -> Option<isize> {
-        match self {
-            MonkeyOperator::Add => Some(lhs - rhs),
-            MonkeyOperator::Sub => Some(lhs + rhs),
-            MonkeyOperator::Mul => match lhs % rhs {
-                0 => Some(lhs / rhs),
-                _ => None,
-            },
-            MonkeyOperator::Div => Some(lhs * rhs),
         }
     }
 }
